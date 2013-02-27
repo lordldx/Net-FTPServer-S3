@@ -17,6 +17,7 @@ Net::FTPServer::S3::DirHandle - The S3 FTP server personality
 package Net::FTPServer::S3::DirHandle;
 
 use strict;
+use Carp qw/confess/;
 
 use Net::FTPServer::DirHandle;
 
@@ -41,22 +42,29 @@ sub get
   {
     my $self = shift;
     my $filename = shift;
-  }
 
-=item $dirh = $dirh->parent;
+    confess "no filename" unless defined($filename) && length($filename);
+    confess "slash filename" if $filename =~ /\//;
+    confess ".. filename"    if $filename eq "..";
+    confess ". filename"     if $filename eq ".";
 
-Return the parent directory of the directory C<$dirh>. If
-the directory is already "/", this returns the same directory handle.
+    my $pathname = $self->{_pathname} . $filename;
 
-=cut
+    # is it a dir?
+    if ($self->{ftps}->{bucket}->list({prefix => $pathname . '/'})->is_done) {
+      # no, its probably a file, lets find out
+      if ($self->{ftps}->{bucket}->object(key => $pathname)->exists) {
+        # yep, it's a file!
+        return Net::FTPServer::S3::FileHandle->new($self->{ftps}, $pathname);
+      }
+    }
+    else {
+      # it seems to be a directory
+      return Net::FTPServer::S3::DirHandle->new($self->{ftps}, $pathname . '/');
+    }
 
-sub parent
-  {
-    my $self = shift;
-
-    my $parent = $self->SUPER::parent;
-    bless $parent, ref $self;
-    return $parent;
+    # Doesn't seem to exist...
+    return undef;
   }
 
 =pod

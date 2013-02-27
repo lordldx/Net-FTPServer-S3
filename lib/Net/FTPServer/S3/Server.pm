@@ -10,6 +10,8 @@ use Net::FTPServer;
 use Net::FTPServer::S3::FileHandle;
 use Net::FTPServer::S3::DirHandle;
 
+use Net::Amazon::S3::Client;
+
 use vars qw(@ISA);
 @ISA = qw(Net::FTPServer);
 
@@ -57,13 +59,21 @@ sub user_login_hook
     my $user = shift;
     my $user_is_anon = shift;
 
+    my $s3 = Net::Amazon::S3->new(aws_access_key_id => $self->config('aws_access_key_id'),
+                                  aws_secret_access_key => $self->config('aws_secret_access_key'),
+                                  retry => 1);
+    die "Could not connect to back-end; please try again later\n" unless defined $s3;
+    $self->{_s3Client} = Net::Amazon::S3::Client->new(s3 => $s3);
+
+    $self->{bucket} = $self->{_s3Client}->bucket(name => $user);
+
   }
 
 =pod
 
 =item $dirh = $self->root_directory_hook;
 
-Hook: Return an instance of Net::FTPServer::S3DirHandle
+Hook: Return an instance of Net::FTPServer::S3::DirHandle
 corresponding to the root directory.
 
 =cut
