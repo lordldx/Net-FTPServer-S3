@@ -4,13 +4,8 @@ perl:
   - "5.16"
 
 install:
- # Deal with all of the DZIL dependencies quickly and quietly
- - cpanm --quiet --notest --skip-satisfied Dist::Zilla
- - cpanm Perl::MinimumVersion
- - dzil authordeps | grep -vP '[^\w:]' | xargs -n 5 -P 10 cpanm --quiet --notest --skip-satisfied
-
- - export RELEASE_TESTING=1 AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1
- - dzil listdeps | grep -vP '[^\w:]' | cpanm --verbose
- 
+    - cpanm --quiet Dist::Zilla
+    - dzil authordeps --missing | cpanm || { cat ~/.cpanm/build.log ; false ; }
+    - dzil listdeps --author --missing | cpanm || { cat ~/.cpanm/build.log ; false ; }
 script:
   - dzil smoke --release --author
