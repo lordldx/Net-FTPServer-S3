@@ -90,9 +90,40 @@ sub list
     # Convert wildcard to a regular expression.
     if ($wildcard)
       {
-	$wildcard = $self->{ftps}->wildcard_to_regex ($wildcard);
+	       $wildcard = $self->{ftps}->wildcard_to_regex ($wildcard);
       }
 
+    # get objectstream from S3
+    my $stream;
+    if ($pathname eq '/') {
+      # in the root directory => don't use prefix
+      $stream = $self->{ftps}->{bucket}->list;
+    } else {
+      # not in the root directory => prefix with current path
+      $stream = $self->{ftps}->{bucket}->list({prefix => $self->{_pathname} . '/'});
+    }
+
+    # extract matching object key's from stream
+    my @list
+    until ($stream->is_done) {
+      foreach my $item ($stream->items) {
+        next if $item->key eq '.' || $item->key eq '..';
+        next if defined $wildcard && $item->key !~ /$wildcard/;
+
+        push @list, $item->key;
+      }
+    }
+
+    # prepare return value
+    @list = sort @list;
+    my @retval;
+    foreach my $file (@list) {
+      if (my $handle = $self->get($file)) {
+        push @retval, [$file, $handle];
+      }
+    }
+
+    return \@retval;
   }
 
 =pod
