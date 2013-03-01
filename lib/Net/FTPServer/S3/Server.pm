@@ -25,6 +25,13 @@ Perform login against C<database>.
 
 =cut
 
+# needed only for testing purposes :'-(
+# please call 'run' for the real server...
+sub new {
+  my $class = shift || 'Net::FTPServer::S3::Server';
+  return bless {}, $class;
+}
+
 sub authentication_hook
   {
     my $self = shift;
@@ -36,7 +43,7 @@ sub authentication_hook
 
     if ( ($user eq 'lorenzo' && $pass eq 'lorenzo') ||
          ($user eq 'tineke' && $pass eq 'tineke') ||
-         ($user eq 'jesper' && pass eq 'jesper') ) {
+         ($user eq 'jesper' && $pass eq 'jesper') ) {
       # Successful login.
       return 0;
     }

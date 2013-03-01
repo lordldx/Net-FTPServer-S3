@@ -95,7 +95,7 @@ sub list
 
     # get objectstream from S3
     my $stream;
-    if ($pathname eq '/') {
+    if ($self->{_pathname} eq '/') {
       # in the root directory => don't use prefix
       $stream = $self->{ftps}->{bucket}->list;
     } else {
@@ -104,7 +104,7 @@ sub list
     }
 
     # extract matching object key's from stream
-    my @list
+    my @list;
     until ($stream->is_done) {
       foreach my $item ($stream->items) {
         next if $item->key eq '.' || $item->key eq '..';
