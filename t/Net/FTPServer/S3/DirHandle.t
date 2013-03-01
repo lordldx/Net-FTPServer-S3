@@ -29,7 +29,7 @@ my $dirhandle = new_ok (Net::Amazon::FTPServer::S3::DirHandle => [$ftps, '/']);
 		my $stream = Test::MockObject::Extends->new(Data::Stream::Bulk->new);
 		$stream->mock('is_done', 0);
 
-		$bucket->mock('list' sub { 
+		$bucket->mock('list', sub { 
 			my ($self, $args) = @_;
 			if ($args->{prefix} eq '/testdir/') {
 				return $stream;
