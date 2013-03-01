@@ -5,7 +5,7 @@ perl:
 
 install:
     - cpanm --quiet Dist::Zilla
-    - dzil authordeps --missing | cpanm || { cat ~/.cpanm/build.log ; false ; }
-    - dzil listdeps --author --missing | cpanm || { cat ~/.cpanm/build.log ; false ; }
+    - dzil authordeps --missing | cpanm --quiet || { cat ~/.cpanm/build.log ; false ; }
+    - dzil listdeps --author --missing | cpanm --quiet || { cat ~/.cpanm/build.log ; false ; }
 script:
   - dzil smoke --release --author
