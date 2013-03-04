@@ -100,7 +100,7 @@ sub list
       $stream = $self->{ftps}->{bucket}->list;
     } else {
       # not in the root directory => prefix with current path
-      $stream = $self->{ftps}->{bucket}->list({prefix => $self->{_pathname} . '/'});
+      $stream = $self->{ftps}->{bucket}->list({prefix => $self->{_pathname}});
     }
 
     # extract matching object key's from stream
@@ -187,6 +187,16 @@ information in a Unix-like format.
 sub status
   {
     my $self = shift;
+
+    my $mode = "d"; # always a directory
+    my $perms = 0700;
+    my $nlink = 0;
+    my $user = $self->{ftps}->{bucket}->name;
+    my $group = $user;
+    my $size = $self->{ftps}->{bucket}->size;
+    my $time =  1234; # whatever (for now) #TODO
+
+    return ($mode, $perms, $nlink, $user, $group, $size, $time);
   }
 
 =pod
@@ -212,6 +222,8 @@ sub move
 
     die if $filename =~ /\//;	# Should never happen.
 
+    die "Not implemented yet; Net::Amazon::S3::Client::Object does not support copy/move"
+    #TODO implement
   }
 
 =pod
@@ -230,6 +242,15 @@ sub delete
   {
     my $self = shift;
 
+    my $obj = $self->{ftps}->{bucket}->object(key => $self->{_pathname} . '/');
+    if ($obj->exists) {
+      # check if the directory is empty
+      my $list = $self->list;
+      return -1 if scalar @$list > 0; # directory not empty #TODO add logging
+
+      $obj->delete;
+      return $obj->exists;
+    }
   }
 
 =item $rv = $dirh->mkdir ($name);
@@ -245,6 +266,11 @@ sub mkdir
     my $name = shift;
 
     die if $name =~ /\//;	# Should never happen.
+
+    $name .= '/' unless $name =~ /\/$/; # append trailing slash
+
+    my $obj = $self->{ftps}->{bucket}->object(key => $name . '/');
+    $obj->put('');
   }
 
 =item $file = $dirh->open ($filename, "r"|"w"|"a");
@@ -262,6 +288,14 @@ sub open
     my $mode = shift;
 
     die if $filename =~ /\//;	# Should never happen.
+    die "unknown mode, use r, w or a" unless ($mode eq 'r' || $mode eq 'w' || $mode eq 'a');
+
+    my $file = $self->get($filename);
+    die "File not found" unless defined $file;
+    die "Can only open files" unless $file->isa('Net::FTPServer::S3::FileHandle');
+
+    return Net::FTPServer::S3::IO->new( Filehandle => $file,
+                                        Mode => $mode);
   }
 
 1 # So that the require or use succeeds.
